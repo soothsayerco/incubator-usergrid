@@ -120,7 +120,7 @@ public class QueueJob extends OnlyOnceJob {
 
     @Override
     protected long getDelay( JobExecution execution ) throws Exception {
-        return TaskManager.BATCH_DEATH_PERIOD;
+        return NotificationJob.BATCH_DEATH_PERIOD;
     }
 
 

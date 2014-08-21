@@ -56,12 +56,8 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
     //this is for tests, will not mark initial post complete, set to false for tests
     private final Meter sendMeter;
     private final Histogram queueSize;
-    private final Counter outstandingQueue;
     private static ExecutorService INACTIVE_DEVICE_CHECK_POOL = Executors.newFixedThreadPool(5);
     public static final String NOTIFIER_ID_POSTFIX = ".notifier.id";
-    public static int BATCH_SIZE = 1000;
-    // timeout for message queue transaction
-    public static final long MESSAGE_TRANSACTION_TIMEOUT = TaskManager.MESSAGE_TRANSACTION_TIMEOUT;
     // If this property is set Notifications are automatically expired in
     // the isOkToSent() method after the specified number of milliseconds
     public static final String PUSH_AUTO_EXPIRE_AFTER_PROPNAME = "usergrid.push-auto-expire-after";
@@ -115,7 +111,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         this.props = props;
         this.sendMeter = metricsFactory.getMeter(NotificationsService.class, "send");
         this.queueSize = metricsFactory.getHistogram(NotificationsService.class, "queue_size");
-        this.outstandingQueue = metricsFactory.getCounter(NotificationsService.class,"current_queue");
         utils = new InflectionUtils();
     }
 
@@ -161,7 +156,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                                 String queueName = getJobQueueName(notification);
                                 for (EntityRef deviceRef : devicesRef) {
                                     long hash = MurmurHash.hash(deviceRef.getUuid());
-                                    if(sketch.estimateCount(hash)>0){
+                                    if(sketch.estimateCount(hash)>0){ //look for duplicates
                                         LOG.debug("Maybe Found duplicate device: {}", deviceRef.getUuid());
                                         continue;
                                     }else {
@@ -245,7 +240,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
      */
     public Observable sendBatchToProviders( final List<QueueMessage> messages,final String queuePath) throws Exception {
         final Map<Object, Notifier> notifierMap = getNotifierMap();
-        final NotificationServiceProxy proxy = this;
         final LoadingCache<UUID,HashMap<String,Object>> notificationCache = CacheBuilder
                 .newBuilder()
                 .expireAfterWrite(5, TimeUnit.MINUTES)
@@ -254,7 +248,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                     public HashMap<String, Object> load(UUID key) throws Exception {
                         HashMap<String,Object> map = new HashMap<String, Object>();
                         final Notification notification = em.get( key, Notification.class );
-                        final TaskManager taskManager =  new TaskManager( em, proxy, qm, notification,queuePath);
+                        final TaskManager taskManager =  new TaskManager( em, qm, notification,queuePath);
                         map.put("taskManager",taskManager);
                         map.put("notification",notification);
                         final Map<String, Object> payloads = notification.getPayloads();
@@ -373,12 +367,10 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                         }
                     });
 
+
     }
 
     public void finishedBatch(Notification notification, long successes, long failures) throws Exception {
-        finishedBatch(notification,successes,failures,false);
-    }
-    public void finishedBatch(Notification notification, long successes, long failures, boolean overrideComplete) throws Exception {
         if (LOG.isDebugEnabled()) {
             StringBuilder sb = new StringBuilder();
             sb.append("finishedBatch ").append(notification.getUuid());
@@ -395,7 +387,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         properties.put("modified", notification.getModified());
 
         //none of this is known and should you ever do this
-        if (isNotificationDeliveryComplete(notification) || overrideComplete) {
             notification.setFinished(notification.getModified());
             properties.put("finished", notification.getModified());
             properties.put("state", notification.getState());
@@ -412,10 +403,8 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                 LOG.info(sb.toString());
             }
 
-        } else {
-            LOG.info("notification finished batch: {}",
-                    notification.getUuid());
-        }
+        LOG.info("notification finished batch: {}",
+                notification.getUuid());
         em.updateProperties(notification, properties);
 
         Set<Notifier> notifiers = new HashSet<Notifier>(getNotifierMap().values()); // remove dups
@@ -605,17 +594,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
             LOG.error("Errer getting provider ID, proceding with rest of batch", e);
             return null;
         }
-    }
-
-
-    private boolean isNotificationDeliveryComplete(Notification notification) throws Exception {
-        if(notification.getQueued() == null){
-            return false;
-        }
-        String queuePath = getJobQueueName(notification);
-        return !qm.hasPendingReads(queuePath, null)
-                && !qm.hasOutstandingTransactions(queuePath, null)
-                && !qm.hasMessagesInQueue(queuePath, null);
     }
 
     private String getJobQueueName(EntityRef entityRef) {

@@ -38,6 +38,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Component( "notificationsQueueListener" )
 public class QueueListener  {
+    public static int BATCH_SIZE = 1000;
+
+    public static final long MESSAGE_TRANSACTION_TIMEOUT =  5 * 60 * 1000;
 
     public static final String queuePath = "notifications/queuelistener";
     private static final Logger LOG = LoggerFactory.getLogger(QueueListener.class);
@@ -135,10 +138,9 @@ public class QueueListener  {
     }
 
     private QueueResults getDeliveryBatch(int batchSize) throws Exception {
-
         QueueQuery qq = new QueueQuery();
         qq.setLimit(batchSize);
-        qq.setTimeout(TaskManager.MESSAGE_TRANSACTION_TIMEOUT);
+        qq.setTimeout(this.MESSAGE_TRANSACTION_TIMEOUT);
         QueueResults results = queueManager.getFromQueue(queuePath, qq);
         LOG.debug("got batch of {} devices", results.size());
         return results;

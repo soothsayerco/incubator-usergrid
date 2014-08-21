@@ -43,7 +43,15 @@ import com.codahale.metrics.Timer;
 @Component( "notificationJob" )
 public class NotificationJob extends OnlyOnceJob {
 
-
+    // period at which the batch is considered dead without activity (10
+    // minutes)
+    // setting it high means that a batch that is dead will hang for longer
+    // but setting it too low may cause duplicates to be sent.
+    // also used for Delay before another Job will be attempted - thus total
+    // time
+    // before a job might be restarted could be as long as 2 x
+    // BATCH_DEATH_PERIOD
+    static final long BATCH_DEATH_PERIOD = 10 * 60 * 1000;
     private static final Logger logger = LoggerFactory.getLogger( NotificationJob.class );
 
     @Autowired
@@ -121,7 +129,7 @@ public class NotificationJob extends OnlyOnceJob {
 
     @Override
     protected long getDelay( JobExecution execution ) throws Exception {
-        return TaskManager.BATCH_DEATH_PERIOD;
+        return this.BATCH_DEATH_PERIOD;
     }
 
 

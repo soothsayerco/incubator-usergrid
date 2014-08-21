@@ -26,6 +26,5 @@ import java.util.Set;
  */
 public interface NotificationServiceProxy {
 
-    public void finishedBatch(Notification notification, long successes, long failures) throws Exception;
 
 }

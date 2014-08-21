@@ -39,23 +39,6 @@ import org.apache.usergrid.persistence.entities.Device;
  */
 public class TaskManager {
 
-    // period to poll for batch completion (keep well under Job scheduler
-    // heartbeat value!)
-    private static final long BATCH_POLL_PERIOD = 60 * 1000;
-    // period to tell job scheduler to wait between heartbeats before timing out
-    // this transaction
-    public static final long SCHEDULER_HEARTBEAT_PERIOD = 5 * 60 * 1000;
-    // period at which the batch is considered dead without activity (10
-    // minutes)
-    // setting it high means that a batch that is dead will hang for longer
-    // but setting it too low may cause duplicates to be sent.
-    // also used for Delay before another Job will be attempted - thus total
-    // time
-    // before a job might be restarted could be as long as 2 x
-    // BATCH_DEATH_PERIOD
-    static final long BATCH_DEATH_PERIOD = 10 * 60 * 1000;
-    public static final long MESSAGE_TRANSACTION_TIMEOUT = SCHEDULER_HEARTBEAT_PERIOD;
-
     private static final Logger LOG = LoggerFactory
             .getLogger(TaskManager.class);
     private final String path;
@@ -66,12 +49,10 @@ public class TaskManager {
     private AtomicLong skips = new AtomicLong();
     private QueueManager qm;
     private EntityManager em;
-    private NotificationServiceProxy ns;
 
-    public TaskManager(  EntityManager em, NotificationServiceProxy ns,QueueManager qm, Notification notification,String queuePath) {
+    public TaskManager(  EntityManager em, QueueManager qm, Notification notification,String queuePath) {
         this.em = em;
         this.qm = qm;
-        this.ns = ns;
         this.path =queuePath;
         this.notification = notification;
     }
