@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NotificationsQueueManager implements NotificationServiceProxy {
     private static final String NOTIFICATION_CONCURRENT_BATCHES = "notification.concurrent.batches";
+    public static final String QUEUE_NAME = "notifications/queuelistener";
 
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsQueueManager.class);
 
@@ -153,7 +154,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                         public Entity call(Entity entity) {
                             try {
                                 List<EntityRef> devicesRef = getDevices(entity); // resolve group
-                                String queueName = getJobQueueName(notification);
+
                                 for (EntityRef deviceRef : devicesRef) {
                                     long hash = MurmurHash.hash(deviceRef.getUuid());
                                     if(sketch.estimateCount(hash)>0){ //look for duplicates
@@ -163,7 +164,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                                         sketch.add(hash,1);
                                     }
                                     QueueMessage message = new QueueMessage(em.getApplicationId(),notification.getUuid(),deviceRef.getUuid());
-                                    qm.postToQueue(queueName, message);
+                                    qm.postToQueue(QUEUE_NAME, message);
                                     if(notification.getQueued() == null){
                                         // update queued time
                                         notification.setQueued(System.currentTimeMillis());
@@ -596,7 +597,4 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         }
     }
 
-    private String getJobQueueName(EntityRef entityRef) {
-        return utils.pluralize(entityRef.getType()) + "/" + entityRef.getUuid();
-    }
 }

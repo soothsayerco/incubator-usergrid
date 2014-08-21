@@ -49,7 +49,7 @@ public class APNsNotification extends SimpleApnsPushNotification {
       try {
           final byte[] token = TokenUtil.tokenStringToByteArray(providerId);
 
-          return new APNsNotification(tracker, date.getTime(), token, payload, notification);
+          return new APNsNotification(tracker, date.getTime(), token, payload);
       }catch(MalformedTokenStringException mtse){
           throw new RuntimeException("Exception converting token",mtse);
       }
@@ -62,7 +62,7 @@ public class APNsNotification extends SimpleApnsPushNotification {
      * @param token
      * @param payload
      */
-    public APNsNotification(TaskTracker tracker, Date expiryTime, byte[] token, String payload,Notification notification) {
+    public APNsNotification(TaskTracker tracker, Date expiryTime, byte[] token, String payload) {
         super(token, payload, expiryTime);
         this.tracker = tracker;
     }

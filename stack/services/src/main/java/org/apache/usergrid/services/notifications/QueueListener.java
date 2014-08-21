@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import rx.*;
 import rx.Observable;
 
 import javax.annotation.PostConstruct;
@@ -39,10 +38,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component( "notificationsQueueListener" )
 public class QueueListener  {
     public static int BATCH_SIZE = 1000;
-
+    public static int MAX_CONSECUTIVE_FAILS = 10;
     public static final long MESSAGE_TRANSACTION_TIMEOUT =  5 * 60 * 1000;
 
-    public static final String queuePath = "notifications/queuelistener";
     private static final Logger LOG = LoggerFactory.getLogger(QueueListener.class);
 
     @Autowired
@@ -82,7 +80,7 @@ public class QueueListener  {
         // run until there are no more active jobs
         while ( true ) {
             try {
-                QueueResults results = getDeliveryBatch(1000);
+                QueueResults results = getDeliveryBatch();
                 List<Message> messages = results.getMessages();
                 HashMap<UUID,List<QueueMessage>> queueMap = new HashMap<>();
                 for(Message message : messages){
@@ -124,7 +122,7 @@ public class QueueListener  {
                 consecutiveExceptions.set(0);
             }catch (Exception ex){
                 LOG.error("failed to dequeue",ex);
-                if(consecutiveExceptions.getAndIncrement() > 10){
+                if(consecutiveExceptions.getAndIncrement() > MAX_CONSECUTIVE_FAILS){
                     LOG.error("killing message listener; too many failures");
                     break;
                 }
@@ -132,16 +130,11 @@ public class QueueListener  {
         }
     }
 
-    public void queueMessage(QueueMessage message){
-        queueManager.postToQueue(queuePath, message);
-
-    }
-
-    private QueueResults getDeliveryBatch(int batchSize) throws Exception {
+    private QueueResults getDeliveryBatch() throws Exception {
         QueueQuery qq = new QueueQuery();
-        qq.setLimit(batchSize);
+        qq.setLimit(BATCH_SIZE);
         qq.setTimeout(this.MESSAGE_TRANSACTION_TIMEOUT);
-        QueueResults results = queueManager.getFromQueue(queuePath, qq);
+        QueueResults results = queueManager.getFromQueue(NotificationsQueueManager.QUEUE_NAME, qq);
         LOG.debug("got batch of {} devices", results.size());
         return results;
     }

@@ -202,11 +202,14 @@ public class NotificationsService extends AbstractCollectionService {
         }
 
         Entity response = super.updateEntity(request, ref, payload);
+        notification = (Notification) response;
 
-        Long deliver = (Long) payload.getProperty("deliver");
+        Long deliver = notification.getDeliver();
         if (deliver != null) {
             if (!deliver.equals(notification.getDeliver())) {
-                notificationQueueManager.processBatchAndReschedule((Notification) response, null);
+                if(!notificationQueueManager.scheduleQueueJob(notification)){
+                    notificationQueueManager.queueNotification(notification, null);
+                }
             }
         }
         return response;
