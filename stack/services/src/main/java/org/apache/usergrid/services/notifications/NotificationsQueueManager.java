@@ -236,19 +236,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
     private void clearNotifierMap(){
         notifierCacheMap.invalidate(em);
     }
-    /*
-        * returns partial list of Device EntityRefs (up to BATCH_SIZE) - empty when
-        * done w/ delivery
-        */
-    private QueueResults getDeliveryBatch(EntityRef notification, int batchSize) throws Exception {
 
-        QueueQuery qq = new QueueQuery();
-        qq.setLimit(batchSize);
-        qq.setTimeout(MESSAGE_TRANSACTION_TIMEOUT);
-        QueueResults results = qm.getFromQueue(getJobQueueName(notification), qq);
-        LOG.debug("got batch of {} devices for notification {}", results.size(), notification.getUuid());
-        return results;
-    }
 
     /**
      * send batches of notifications to provider
@@ -318,7 +306,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                                                 }
                                                 Object payload = translatedPayloads.get(payloadKey);
 
-                                                Receipt receipt = new Receipt(notification.getUuid(), providerId, payload, deviceUUID);
+                                                Receipt receipt = new Receipt(notification.getUuid(), providerId, payload, deviceUUID,message);
                                                 TaskTracker tracker = new TaskTracker(notifier, taskManager, receipt, deviceUUID);
                                                 if (payload == null) {
                                                     LOG.debug("selected device {} for notification {} doesn't have a valid payload. skipping.", deviceUUID, notification.getUuid());

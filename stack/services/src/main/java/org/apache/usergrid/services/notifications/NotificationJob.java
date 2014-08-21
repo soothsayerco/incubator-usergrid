@@ -99,7 +99,7 @@ public class NotificationJob extends OnlyOnceJob {
             }
 
             try {
-                notificationsService.getQueueManager().processBatchAndReschedule( notification, jobExecution );
+                notificationsService.getQueueManager().queueNotification( notification, jobExecution );
             }
             catch ( Exception e ) {
                 logger.error( "execute NotificationJob failed", e );

@@ -102,7 +102,7 @@ public class NotificationBatchJob implements Job {
 
 
             try {
-                notificationsService.getQueueManager().processBatchAndReschedule( notification, jobExecution );
+                notificationsService.getQueueManager().queueNotification( notification, jobExecution );
             }
             catch ( Exception e ) {
                 logger.error( "execute NotificationBatchJob failed", e );
