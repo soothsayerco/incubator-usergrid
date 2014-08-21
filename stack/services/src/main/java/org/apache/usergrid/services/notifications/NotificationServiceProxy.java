@@ -28,5 +28,4 @@ public interface NotificationServiceProxy {
 
     public void finishedBatch(Notification notification, long successes, long failures) throws Exception;
 
-    void asyncCheckForInactiveDevices(Set<Notifier> notifiers) throws Exception;
 }

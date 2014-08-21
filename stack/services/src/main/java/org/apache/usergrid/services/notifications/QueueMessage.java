@@ -24,20 +24,42 @@ import java.util.UUID;
 public class QueueMessage extends Message {
 
     static final String MESSAGE_PROPERTY_DEVICE_UUID = "deviceUUID";
+    static final String MESSAGE_PROPERTY_APPLICATION_UUID = "applicationUUID";
+
 
     public QueueMessage() {
     }
 
-    public QueueMessage(UUID deviceId){
+    public QueueMessage(UUID applicationId,UUID notificationId,UUID deviceId){
+        setApplicationId(applicationId);
+        setDeviceId(deviceId);
+    }
+
+
+
+    public static QueueMessage generate(Message message){
+        return new QueueMessage((UUID) message.getObjectProperty(MESSAGE_PROPERTY_APPLICATION_UUID),(UUID) message.getObjectProperty("notificationId"),(UUID) message.getObjectProperty(MESSAGE_PROPERTY_DEVICE_UUID));
+    }
+
+    public UUID getApplicationId() {
+        return (UUID) this.getObjectProperty(MESSAGE_PROPERTY_APPLICATION_UUID);
+    }
+    public void setApplicationId(UUID applicationId){
+        this.setProperty(MESSAGE_PROPERTY_APPLICATION_UUID,applicationId);
+    }
+
+    public UUID getDeviceId() {
+        return (UUID) this.getObjectProperty(MESSAGE_PROPERTY_DEVICE_UUID);
+    }
+    public void setDeviceId(UUID deviceId){
         this.setProperty(MESSAGE_PROPERTY_DEVICE_UUID,deviceId);
     }
 
-    public QueueMessage(EntityRef deviceRef){
-        this.setProperty(MESSAGE_PROPERTY_DEVICE_UUID,deviceRef.getUuid());
+    public UUID getNotificationId(){
+        return (UUID) this.getObjectProperty("notificationId");
     }
 
-    public static QueueMessage generate(Message message){
-        return new QueueMessage((UUID) message.getObjectProperty(MESSAGE_PROPERTY_DEVICE_UUID));
+    public void setNotificationId(UUID notificationId){
+        this.setProperty("notificationdId",notificationId);
     }
-
 }

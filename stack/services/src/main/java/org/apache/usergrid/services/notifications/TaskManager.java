@@ -61,7 +61,6 @@ public class TaskManager {
     private final String path;
 
     private Notification notification;
-    private  ConcurrentHashMap<UUID,Message> remaining;
     private AtomicLong successes = new AtomicLong();
     private AtomicLong failures = new AtomicLong();
     private AtomicLong skips = new AtomicLong();
@@ -69,17 +68,12 @@ public class TaskManager {
     private EntityManager em;
     private NotificationServiceProxy ns;
 
-    public TaskManager(  EntityManager em, NotificationServiceProxy ns,QueueManager qm, Notification notification, QueueResults queueResults) {
+    public TaskManager(  EntityManager em, NotificationServiceProxy ns,QueueManager qm, Notification notification,String queuePath) {
         this.em = em;
         this.qm = qm;
         this.ns = ns;
-        this.path = queueResults.getPath();
+        this.path =queuePath;
         this.notification = notification;
-        this.remaining = new ConcurrentHashMap<UUID,Message>();
-        for (Message m : queueResults.getMessages()) {
-            remaining
-                    .put((UUID) m.getObjectProperty("deviceUUID"), m);
-        }
     }
 
     public void skip(UUID deviceUUID) throws Exception {
@@ -92,56 +86,51 @@ public class TaskManager {
     }
 
     public void completed(Notifier notifier, Receipt receipt, UUID deviceUUID,
-            String newProviderId) throws Exception {
+                          String newProviderId) throws Exception {
 
-            LOG.debug("REMOVED {}", deviceUUID);
-            try {
-                EntityRef deviceRef = new SimpleEntityRef(Device.ENTITY_TYPE,
-                        deviceUUID);
+        LOG.debug("REMOVED {}", deviceUUID);
+        try {
+            EntityRef deviceRef = new SimpleEntityRef(Device.ENTITY_TYPE,
+                    deviceUUID);
 
-                if (receipt != null) {
-                    LOG.debug("notification {} sent to device {}. saving receipt.",
-                            notification.getUuid(), deviceUUID);
-                    successes.incrementAndGet();
-                    receipt.setSent(System.currentTimeMillis());
-                    this.saveReceipt(notification, deviceRef, receipt);
-                    LOG.debug("notification {} receipt saved for device {}",
-                            notification.getUuid(), deviceUUID);
-                }
-
-                if (remaining.containsKey(deviceUUID)) {
-                    LOG.debug("notification {} removing device {} from remaining", notification.getUuid(), deviceUUID);
-                    qm.commitTransaction(path, remaining.get(deviceUUID).getTransaction(), null);
-                }
-
-                if (newProviderId != null) {
-                    LOG.debug("notification {} replacing device {} notifierId", notification.getUuid(), deviceUUID);
-                    replaceProviderId(deviceRef, notifier, newProviderId);
-                }
-
-                LOG.debug("notification {} completed device {}", notification.getUuid(), deviceUUID);
-
-            } finally {
-                LOG.debug("COUNT is: {}", successes.get());
-                remaining.remove(deviceUUID);
-                // note: stats are transient for the duration of the batch
-                if (remaining.size() == 0) {
-                    long successesCopy = successes.get();
-                    long failuresCopy = failures.get();
-                    if (successesCopy > 0 || failuresCopy > 0 || skips.get()>0) {
-                        ns.finishedBatch(notification, successesCopy, failuresCopy);
-                    }
-                }
-
+            if (receipt != null) {
+                LOG.debug("notification {} sent to device {}. saving receipt.",
+                        notification.getUuid(), deviceUUID);
+                successes.incrementAndGet();
+                receipt.setSent(System.currentTimeMillis());
+                this.saveReceipt(notification, deviceRef, receipt);
+                LOG.debug("notification {} receipt saved for device {}",
+                        notification.getUuid(), deviceUUID);
             }
+
+            LOG.debug("notification {} removing device {} from remaining", notification.getUuid(), deviceUUID);
+            qm.commitTransaction(path, receipt.getMessage().getTransaction(), null);
+
+            if (newProviderId != null) {
+                LOG.debug("notification {} replacing device {} notifierId", notification.getUuid(), deviceUUID);
+                replaceProviderId(deviceRef, notifier, newProviderId);
+            }
+
+            LOG.debug("notification {} completed device {}", notification.getUuid(), deviceUUID);
+
+        } finally {
+            LOG.debug("COUNT is: {}", successes.get());
+            // note: stats are transient for the duration of the batch
+//                if (remaining.size() == 0) {
+//                    long successesCopy = successes.get();
+//                    long failuresCopy = failures.get();
+//                    if (successesCopy > 0 || failuresCopy > 0 || skips.get()>0) {
+//                        ns.finishedBatch(notification, successesCopy, failuresCopy);
+//                    }
+//                }
+
+        }
     }
 
     public void failed(Notifier notifier, Receipt receipt, UUID deviceUUID, Object code,
-            String message) throws Exception {
+                       String message) throws Exception {
 
         try {
-
-
             if (LOG.isDebugEnabled()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("notification ").append(notification.getUuid());

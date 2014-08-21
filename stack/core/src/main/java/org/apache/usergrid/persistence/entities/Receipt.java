@@ -22,12 +22,15 @@ import org.apache.usergrid.persistence.TypedEntity;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.UUID;
 import org.apache.usergrid.persistence.annotations.EntityProperty;
+import org.apache.usergrid.mq.Message;
 
 @XmlRootElement
 public class Receipt extends TypedEntity {
 
     public static final String ENTITY_TYPE = "receipt";
-    public static final String NOTIFICATION_CONNECTION = "notification";
+
+    @EntityProperty
+    private Message message = null;
 
     /** device id **/
     @EntityProperty
@@ -63,11 +66,12 @@ public class Receipt extends TypedEntity {
     public Receipt() {
     }
 
-    public Receipt(UUID notificationUUID, String notifierId, Object payload,UUID deviceId) {
+    public Receipt(UUID notificationUUID, String notifierId, Object payload,UUID deviceId, Message message) {
         this.notificationUUID = notificationUUID;
         this.notifierId = notifierId;
         this.payload = payload;
         this.setDeviceId(deviceId);
+        this.message = message;
     }
 
     @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -129,5 +133,9 @@ public class Receipt extends TypedEntity {
 
     public void setDeviceId(UUID deviceId) {
         this.deviceId = deviceId;
+    }
+
+    public Message getMessage(){
+        return message;
     }
 }
