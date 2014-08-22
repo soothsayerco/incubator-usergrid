@@ -233,7 +233,6 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
 
         // perform push //
 
-        ns.getQueueManager().processBatchAndReschedule(notification, null);
 
         // verify Query for FINISHED state
         query = new Query();
@@ -624,7 +623,6 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
         // perform push //
 
         try {
-            ns.getQueueManager().processBatchAndReschedule(notification,null);
             fail("testConnection() should have failed");
         } catch (Exception ex) {
             // good, there should be an error
@@ -725,8 +723,8 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
         }
 
         // perform push //
-        int oldBatchSize = NotificationsQueueManager.BATCH_SIZE;
-        NotificationsQueueManager.BATCH_SIZE = 10;
+        int oldBatchSize = QueueListener.BATCH_SIZE;
+        QueueListener.BATCH_SIZE = 10;
         try {
             ExecutorService pool = Executors
                     .newFixedThreadPool(APNsAdapter.MAX_CONNECTION_POOL_SIZE);
@@ -738,7 +736,7 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
                         }catch (Exception e){}
                 }});
         } finally {
-            NotificationsQueueManager.BATCH_SIZE = oldBatchSize;
+            QueueListener.BATCH_SIZE = oldBatchSize;
         }
 
         // check receipts //

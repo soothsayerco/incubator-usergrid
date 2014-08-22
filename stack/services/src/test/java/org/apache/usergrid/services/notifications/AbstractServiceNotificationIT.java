@@ -57,12 +57,11 @@ public class AbstractServiceNotificationIT extends AbstractServiceIT {
 
     protected Notification scheduleNotificationAndWait(Notification notification)
             throws Exception {
-        getNotificationService().getQueueManager().processBatchAndReschedule(notification,null);
+        //getNotificationService().getQueueManager().queueNotification(notification,null);
         long timeout = System.currentTimeMillis() + 60000;
         while (System.currentTimeMillis() < timeout) {
             Thread.sleep(200);
-            notification = app.getEm().get(notification.getUuid(),
-                    Notification.class);
+            notification = app.getEm().get(notification.getUuid(),   Notification.class);
             if (notification.getFinished() != null) {
                 return notification;
             }

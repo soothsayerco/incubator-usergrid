@@ -437,12 +437,8 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
 
         // perform push //
 
-        try {
-            ns.getQueueManager().processBatchAndReschedule(notification, null);
+            //ns.getQueueManager().processBatchAndReschedule(notification, null);
             fail("Should have received a ConnectionException");
-        } catch (ConnectionException ex) {
-            // good
-        }
     }
 
     @Ignore("Run only if you need to.")
