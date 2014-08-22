@@ -25,25 +25,32 @@ public class QueueMessage extends Message {
 
     static final String MESSAGE_PROPERTY_DEVICE_UUID = "deviceUUID";
     static final String MESSAGE_PROPERTY_APPLICATION_UUID = "applicationUUID";
+    static final String MESSAGE_PROPERTY_NOTIFIER_ID = "notifierId";
+    static final String MESSAGE_PROPERTY_NOTIFICATION_ID = "notificationId";
+    static final String MESSAGE_PROPERTY_NOTIFIER_NAME = "notifierName";
 
 
     public QueueMessage() {
     }
 
-    public QueueMessage(UUID applicationId,UUID notificationId,UUID deviceId){
+    public QueueMessage(UUID applicationId,UUID notificationId,UUID deviceId,String notifierName,String notifierId){
         setApplicationId(applicationId);
         setDeviceId(deviceId);
+        setNotificationId(notificationId);
+        setNotifierName(notifierName);
+        setNotifierId(notifierId);
     }
 
 
 
     public static QueueMessage generate(Message message){
-        return new QueueMessage((UUID) message.getObjectProperty(MESSAGE_PROPERTY_APPLICATION_UUID),(UUID) message.getObjectProperty("notificationId"),(UUID) message.getObjectProperty(MESSAGE_PROPERTY_DEVICE_UUID));
+        return new QueueMessage((UUID) message.getObjectProperty(MESSAGE_PROPERTY_APPLICATION_UUID),(UUID) message.getObjectProperty(MESSAGE_PROPERTY_NOTIFICATION_ID),(UUID) message.getObjectProperty(MESSAGE_PROPERTY_DEVICE_UUID),message.getStringProperty(MESSAGE_PROPERTY_NOTIFIER_NAME),message.getStringProperty(MESSAGE_PROPERTY_NOTIFIER_ID));
     }
 
     public UUID getApplicationId() {
         return (UUID) this.getObjectProperty(MESSAGE_PROPERTY_APPLICATION_UUID);
     }
+
     public void setApplicationId(UUID applicationId){
         this.setProperty(MESSAGE_PROPERTY_APPLICATION_UUID,applicationId);
     }
@@ -56,10 +63,26 @@ public class QueueMessage extends Message {
     }
 
     public UUID getNotificationId(){
-        return (UUID) this.getObjectProperty("notificationId");
+        return (UUID) this.getObjectProperty(MESSAGE_PROPERTY_NOTIFICATION_ID);
     }
 
     public void setNotificationId(UUID notificationId){
-        this.setProperty("notificationdId",notificationId);
+        this.setProperty(MESSAGE_PROPERTY_NOTIFICATION_ID,notificationId);
     }
+
+    public String getNotifierId() {
+        return  this.getStringProperty(MESSAGE_PROPERTY_NOTIFIER_ID);
+    }
+    public void setNotifierId(String notifierId){
+        this.setProperty(MESSAGE_PROPERTY_NOTIFIER_ID,notifierId);
+    }
+
+    public String getNotifierName() {
+        return  this.getStringProperty(MESSAGE_PROPERTY_NOTIFIER_NAME);
+    }
+    public void setNotifierName(String name){
+        this.setProperty(MESSAGE_PROPERTY_NOTIFIER_NAME,name);
+    }
+
+
 }

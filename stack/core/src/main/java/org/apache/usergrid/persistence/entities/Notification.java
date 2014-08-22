@@ -41,6 +41,8 @@ public class Notification extends TypedEntity {
 
     public static final String RECEIPTS_COLLECTION = "receipts";
 
+
+
     public static enum State {
         CREATED, FAILED, SCHEDULED, STARTED, FINISHED, CANCELED, EXPIRED
     }
@@ -48,6 +50,10 @@ public class Notification extends TypedEntity {
     /** Map Notifier ID -> Payload data */
     @EntityProperty
     protected Map<String, Object> payloads;
+
+    /** Total count */
+    @EntityProperty
+    private int expectedCount;
 
     /** Time processed */
     @EntityProperty
@@ -237,4 +243,9 @@ public class Notification extends TypedEntity {
     public void setQueued(Long queued) {
         this.queued = queued;
     }
+
+    public void setExpectedCount(int expectedCount) {  this.expectedCount = expectedCount;  }
+
+    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    public int getExpectedCount() {  return expectedCount;  }
 }
