@@ -59,15 +59,10 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
     private final Histogram queueSize;
     private static ExecutorService INACTIVE_DEVICE_CHECK_POOL = Executors.newFixedThreadPool(5);
     public static final String NOTIFIER_ID_POSTFIX = ".notifier.id";
-    // If this property is set Notifications are automatically expired in
-    // the isOkToSent() method after the specified number of milliseconds
-    public static final String PUSH_AUTO_EXPIRE_AFTER_PROPNAME = "usergrid.push-auto-expire-after";
+
     private final EntityManager em;
     private final QueueManager qm;
     private final JobScheduler jobScheduler;
-    private final Properties props;
-    private final InflectionUtils utils;
-    private Long pushAutoExpireAfter = null;
 
     public final Map<String, ProviderAdapter> providerAdapters =   new HashMap<String, ProviderAdapter>(3);
     {
@@ -105,14 +100,12 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                 }
             });;
 
-    public NotificationsQueueManager(JobScheduler jobScheduler, EntityManager entityManager, Properties props, QueueManager queueManager, MetricsFactory metricsFactory){
+    public NotificationsQueueManager(JobScheduler jobScheduler, EntityManager entityManager, QueueManager queueManager, MetricsFactory metricsFactory){
         this.em = entityManager;
         this.qm = queueManager;
         this.jobScheduler = jobScheduler;
-        this.props = props;
         this.sendMeter = metricsFactory.getMeter(NotificationsService.class, "send");
         this.queueSize = metricsFactory.getHistogram(NotificationsService.class, "queue_size");
-        utils = new InflectionUtils();
     }
 
     public boolean scheduleQueueJob(Notification notification) throws Exception{
@@ -132,8 +125,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         LOG.info("notification {} start queuing", notification.getUuid());
         final PathQuery<Device> pathQuery = notification.getPathQuery(); //devices query
         final AtomicInteger deviceCount = new AtomicInteger(); //count devices so you can make a judgement on batching
-        final AtomicInteger batchCount = new AtomicInteger(); //count devices so you can make a judgement on batching
-        final int numCurrentBatchesConfig = getNumConcurrentBatches();
         final ConcurrentLinkedQueue<String> errorMessages = new ConcurrentLinkedQueue<String>(); //build up list of issues
         final HashMap<Object,Notifier> notifierMap =  getNotifierMap();
         final Map<String,Object> payloads = notification.getPayloads();
@@ -208,7 +199,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
             }, Schedulers.io()).toBlocking().lastOrDefault(null);
         }
 
-        batchCount.set(Math.min(numCurrentBatchesConfig, batchCount.get()));
         // update queued time
         Map<String, Object> properties = new HashMap<String, Object>(2);
         properties.put("queued", notification.getQueued());
@@ -451,9 +441,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         return translatedPayloads;
     }
 
-    private int getNumConcurrentBatches() {
-        return Integer.parseInt(props.getProperty(NOTIFICATION_CONCURRENT_BATCHES, "1"));
-    }
 
     private static final class IteratorObservable<T> implements rx.Observable.OnSubscribe<T> {
         private final Iterator<T> input;
@@ -549,17 +536,6 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
     }
 
     private boolean isOkToSend(Notification notification) {
-        String autoExpireAfterString = props.getProperty(PUSH_AUTO_EXPIRE_AFTER_PROPNAME);
-
-        if (autoExpireAfterString != null) {
-            pushAutoExpireAfter = Long.parseLong(autoExpireAfterString);
-        }
-        if (pushAutoExpireAfter != null) {
-            if (notification.getCreated() < System.currentTimeMillis() - pushAutoExpireAfter) {
-                notification.setExpire(System.currentTimeMillis() - 1L);
-            }
-        }
-
         if (notification.getFinished() != null) {
             LOG.info("notification {} already processed. not sending.",
                     notification.getUuid());

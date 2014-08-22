@@ -96,7 +96,7 @@ public class NotificationsService extends AbstractCollectionService {
         queueSize = metricsService.getHistogram(NotificationsService.class, "queue_size");
         outstandingQueue = metricsService.getCounter(NotificationsService.class,"current_queue");
         JobScheduler jobScheduler = new JobScheduler(sm,em);
-        notificationQueueManager = new NotificationsQueueManager(jobScheduler,em,sm.getProperties(),sm.getQueueManager(),metricsService);
+        notificationQueueManager = new NotificationsQueueManager(jobScheduler,em,sm.getQueueManager(),metricsService);
         gracePeriod = jobScheduler.SCHEDULER_GRACE_PERIOD;
     }
 

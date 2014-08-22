@@ -33,6 +33,8 @@ import rx.Observable;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component( "notificationsQueueListener" )
@@ -53,25 +55,16 @@ public class QueueListener  {
     private EntityManagerFactory emf;
     private QueueManager queueManager;
     private ServiceManager svcMgr;
-    private Properties properties;
-
+    ExecutorService pool;
     public QueueListener() {
+      //  pool = Executors.newFixedThreadPool(1);
     }
 
     @PostConstruct
     void init() {
-        svcMgr =  smf.getServiceManager(smf.getManagementAppId());
+        svcMgr = smf.getServiceManager(smf.getManagementAppId());
         queueManager = svcMgr.getQueueManager();
-        properties = new Properties();
-        try {
-            properties.load(Thread.currentThread()
-                    .getContextClassLoader()
-                    .getResourceAsStream("usergrid.properties"));
-        } catch (Exception e) {
-            LOG.error("Could not load props","");
-        }
-
-        run();
+      //  run();
     }
 
     public void run(){
@@ -103,7 +96,6 @@ public class QueueListener  {
                     NotificationsQueueManager manager = new NotificationsQueueManager(
                             new JobScheduler(serviceManager,entityManager),
                             entityManager,
-                            properties,
                             queueManager,
                             metricsService
                     );
