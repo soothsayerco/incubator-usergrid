@@ -349,9 +349,9 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                         }
                     }, Schedulers.io())
                     .buffer(QueueListener.BATCH_SIZE)
-                    .map(new Func1<List<QueueMessage>, Object>() {
+                    .map(new Func1<List<QueueMessage>, HashMap<UUID, Notification>>() {
                         @Override
-                        public Object call(List<QueueMessage> queueMessages) {
+                        public HashMap<UUID, Notification> call(List<QueueMessage> queueMessages) {
                             //for gcm this will actually send notification
                             for (ProviderAdapter providerAdapter : providerAdapters.values()) {
                                 try {
@@ -366,6 +366,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                                 if (notifications.get(message.getNotificationId()) == null) {
                                     try {
                                         final Notification notification = em.get(message.getNotificationId(), Notification.class);
+                                        notifications.put(notification.getUuid(),notification);
                                         finishedBatch(notification, 0, 0);
                                     } catch (Exception e) {
                                         LOG.error("Failed to finish batch", e);
@@ -374,7 +375,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
 
                             }
                             notificationCache.cleanUp();
-                            return null;
+                            return notifications;
                         }
                     });
 
