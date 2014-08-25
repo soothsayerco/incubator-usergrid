@@ -35,6 +35,7 @@ import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component( "notificationsQueueListener" )
@@ -57,18 +58,26 @@ public class QueueListener  {
     private ServiceManager svcMgr;
     ExecutorService pool;
     public QueueListener() {
-      //  pool = Executors.newFixedThreadPool(1);
+        pool = Executors.newFixedThreadPool(1);
     }
 
     @PostConstruct
     void init() {
-        svcMgr = smf.getServiceManager(smf.getManagementAppId());
-        queueManager = svcMgr.getQueueManager();
-      //  run();
+        pool.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    execute();
+                }catch (Exception e){
+                    LOG.error("failed to start push",e);
+                }
+            }
+        });
     }
 
-    public void run(){
-
+    private void execute(){
+        svcMgr = smf.getServiceManager(smf.getManagementAppId());
+        queueManager = svcMgr.getQueueManager();
         AtomicInteger consecutiveExceptions = new AtomicInteger();
         // run until there are no more active jobs
         while ( true ) {
@@ -110,8 +119,13 @@ public class QueueListener  {
                         first = Observable.merge(first, o);
                     }
                 }
-                first.toBlocking().lastOrDefault(null);
+                if(first!=null) {
+                    first.toBlocking().lastOrDefault(null);
+                }
                 consecutiveExceptions.set(0);
+                if(messages.size()<=0) {
+                    Thread.sleep(5000);
+                }
             }catch (Exception ex){
                 LOG.error("failed to dequeue",ex);
                 if(consecutiveExceptions.getAndIncrement() > MAX_CONSECUTIVE_FAILS){
