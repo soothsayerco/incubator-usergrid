@@ -40,9 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Component( "notificationsQueueListener" )
 public class QueueListener  {
-    public static int BATCH_SIZE = 1000;
     public static int MAX_CONSECUTIVE_FAILS = 10;
-    public static final long MESSAGE_TRANSACTION_TIMEOUT =  5 * 60 * 1000;
+
 
     private static final Logger LOG = LoggerFactory.getLogger(QueueListener.class);
 
@@ -82,7 +81,7 @@ public class QueueListener  {
         // run until there are no more active jobs
         while ( true ) {
             try {
-                QueueResults results = getDeliveryBatch();
+                QueueResults results = NotificationsQueueManager.getDeliveryBatch(queueManager);
                 List<Message> messages = results.getMessages();
                 HashMap<UUID,List<QueueMessage>> queueMap = new HashMap<>();
                 for(Message message : messages){
@@ -136,13 +135,6 @@ public class QueueListener  {
         }
     }
 
-    private QueueResults getDeliveryBatch() throws Exception {
-        QueueQuery qq = new QueueQuery();
-        qq.setLimit(BATCH_SIZE);
-        qq.setTimeout(this.MESSAGE_TRANSACTION_TIMEOUT);
-        QueueResults results = queueManager.getFromQueue(NotificationsQueueManager.QUEUE_NAME, qq);
-        LOG.debug("got batch of {} devices", results.size());
-        return results;
-    }
+
 
 }

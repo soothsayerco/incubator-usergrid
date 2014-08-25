@@ -723,8 +723,8 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
         }
 
         // perform push //
-        int oldBatchSize = QueueListener.BATCH_SIZE;
-        QueueListener.BATCH_SIZE = 10;
+        int oldBatchSize = NotificationsQueueManager.BATCH_SIZE;
+        NotificationsQueueManager.BATCH_SIZE = 10;
         try {
             ExecutorService pool = Executors
                     .newFixedThreadPool(APNsAdapter.MAX_CONNECTION_POOL_SIZE);
@@ -736,7 +736,7 @@ public class NotificationsServiceIT extends AbstractServiceNotificationIT {
                         }catch (Exception e){}
                 }});
         } finally {
-            QueueListener.BATCH_SIZE = oldBatchSize;
+            NotificationsQueueManager.BATCH_SIZE = oldBatchSize;
         }
 
         // check receipts //

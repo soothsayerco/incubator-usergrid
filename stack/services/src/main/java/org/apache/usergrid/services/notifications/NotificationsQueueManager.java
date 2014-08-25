@@ -51,7 +51,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class NotificationsQueueManager implements NotificationServiceProxy {
     private static final String NOTIFICATION_CONCURRENT_BATCHES = "notification.concurrent.batches";
     public static final String QUEUE_NAME = "notifications/queuelistener";
+    public static int BATCH_SIZE = 1000;
 
+    public static final long MESSAGE_TRANSACTION_TIMEOUT =  5 * 60 * 1000;
     private static final Logger LOG = LoggerFactory.getLogger(NotificationsQueueManager.class);
 
     //this is for tests, will not mark initial post complete, set to false for tests
@@ -106,6 +108,15 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         this.jobScheduler = jobScheduler;
         this.sendMeter = metricsFactory.getMeter(NotificationsService.class, "send");
         this.queueSize = metricsFactory.getHistogram(NotificationsService.class, "queue_size");
+    }
+
+    public static QueueResults getDeliveryBatch(QueueManager queueManager) throws Exception {
+        QueueQuery qq = new QueueQuery();
+        qq.setLimit(BATCH_SIZE);
+        qq.setTimeout(MESSAGE_TRANSACTION_TIMEOUT);
+        QueueResults results = queueManager.getFromQueue(NotificationsQueueManager.QUEUE_NAME, qq);
+        LOG.debug("got batch of {} devices", results.size());
+        return results;
     }
 
     public boolean scheduleQueueJob(Notification notification) throws Exception{
@@ -338,7 +349,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                             });
                         }
                     }, Schedulers.io())
-                    .buffer(QueueListener.BATCH_SIZE)
+                    .buffer(BATCH_SIZE)
                     .map(new Func1<List<QueueMessage>, HashMap<UUID, Notification>>() {
                         @Override
                         public HashMap<UUID, Notification> call(List<QueueMessage> queueMessages) {
