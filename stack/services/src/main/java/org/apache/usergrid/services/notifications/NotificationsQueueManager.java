@@ -294,7 +294,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
                                         }
                                         boolean foundNotifier = false;
                                         try {
-                                            String notifierName = message.getNotifierName();
+                                            String notifierName = message.getNotifierName().toLowerCase();
                                             Notifier notifier = notifierMap.get(notifierName.toLowerCase());
                                             Object payload = translatedPayloads.get(notifierName);
                                             Receipt receipt = new Receipt(notification.getUuid(), message.getNotifierId(), payload, deviceUUID, message);
@@ -420,7 +420,7 @@ public class NotificationsQueueManager implements NotificationServiceProxy {
         Map<String, Object> translatedPayloads = new HashMap<String, Object>(
                 payloads.size());
         for (Map.Entry<String, Object> entry : payloads.entrySet()) {
-            String payloadKey = entry.getKey();
+            String payloadKey = entry.getKey().toLowerCase();
             Object payloadValue = entry.getValue();
             Notifier notifier = notifierMap.get(payloadKey);
             if(notifier==null){
