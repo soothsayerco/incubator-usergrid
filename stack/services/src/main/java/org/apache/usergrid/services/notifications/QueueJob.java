@@ -124,4 +124,8 @@ public class QueueJob extends OnlyOnceJob {
     }
 
 
+    @Override
+    public void dead(JobExecution execution) throws Exception {
+
+    }
 }
