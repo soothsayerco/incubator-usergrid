@@ -22,7 +22,7 @@
 		<bundle.symbolicName>org.usergrid</bundle.symbolicName>
 		<bundle.namespace>org.usergrid</bundle.namespace>
 		<spring-java-version>1.0.1.RELEASE</spring-java-version>
-		<jackson-version>2.1.1</jackson-version>
+		<jackson-version>2.12.6.1</jackson-version>
 	</properties>
 	
 	<parent>
